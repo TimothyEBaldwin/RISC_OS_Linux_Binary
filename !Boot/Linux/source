@@ -1,0 +1,5 @@
+# Source and build GIT commits
+SOURCE=2090c8f84e3d08e3e9bc71c3c36c4f89696fd401
+BINARY=RPCEmu
+LINUX='Linux bfg 4.9.0-2-amd64 #1 SMP Debian 4.9.13-1 (2017-02-27) x86_64 GNU/Linux'
+
