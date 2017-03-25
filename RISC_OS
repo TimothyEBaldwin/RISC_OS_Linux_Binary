@@ -1,0 +1,7 @@
+[Desktop Entry]
+Comment=The port of RISC OS to Linux.
+Exec=perl -e '$root = @ARGV[0]; $root =~ s:/[^/]*$::; chdir $root . "/" . chr(33) . "Boot/Linux"; exec "make";' %k
+Name=RISC OS (Linux Port)
+Terminal=true
+TerminalOptions=\s--noclose
+Type=Application
