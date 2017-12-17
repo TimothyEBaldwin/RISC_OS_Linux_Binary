@@ -1,5 +1,5 @@
 # Source and build GIT commits
-SOURCE=170438f50396b723bb1afc1436538ac79ecad7c2
-BINARY=fe67112f5d63db9731670b4909c1e6732a8d2aad
-LINUX='Linux matilda 4.9.20-teb2+ #2 SMP Thu Apr 6 00:16:45 BST 2017 armv7l GNU/Linux'
+SOURCE=ba7a5f3218f664196304be6550dae1bac5c90108
+BINARY=4e09eac5579db3627a65cf156e041493ee322310
+LINUX='Linux matilda 4.13.4-teb1 #1 SMP Fri Sep 29 08:39:25 BST 2017 armv7l GNU/Linux'
 
