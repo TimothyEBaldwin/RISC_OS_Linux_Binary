@@ -1,0 +1,5 @@
+# Source and build GIT commits
+SOURCE=71b98696f2f7fc83d287d51543e2fa360261896d
+BINARY=b2633d9e57841a3105b47b830b1eea35fb6ee0a6
+LINUX='Linux bfg 4.9.0-5-amd64 #1 SMP Debian 4.9.65-3+deb9u2 (2018-01-04) x86_64 GNU/Linux'
+
