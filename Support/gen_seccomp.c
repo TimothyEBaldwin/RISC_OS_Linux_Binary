@@ -42,21 +42,27 @@ int main(int argc, char **argv) {
   int opt, rc;
   bool allow_unix_socket = false;
   bool allow_symlinks = false;
+  bool allow_ptrace = false;
 
-  while ((opt = getopt(argc, argv, "+us")) != -1) switch (opt) {
+  while ((opt = getopt(argc, argv, "+usp")) != -1) switch (opt) {
     case 'u':
       allow_unix_socket = true;
       break;
     case 's':
       allow_symlinks = true;
       break;
+    case 'p':
+      allow_ptrace = true;
+      break;
   }
 
   scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ALLOW);
   if (!ctx) error(1, errno, "Unable to create libseccomp context");
 
+#ifdef __aarch64__
   rc = seccomp_arch_add(ctx, SCMP_ARCH_ARM);
   if (rc) error(0, -rc, "Unable to add ARM to libseccomp context");
+#endif
 
   // Don't allow inserting into terminal input buffer
   rc = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ioctl), 1, SCMP_A1(SCMP_CMP_EQ, TIOCSTI));
@@ -75,6 +81,11 @@ int main(int argc, char **argv) {
     if (rc) error(1, -rc, "Unable to create UNIX socket rule");
   }
 
+  if (!allow_ptrace) {
+    rc = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 0);
+    if (rc) error(1, -rc, "Unable to create UNIX socket rule");
+  }
+
   rc = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(keyctl), 0);
   if (rc) error(1, -rc, "Unable to create keyctl rule");
 
@@ -87,5 +98,5 @@ int main(int argc, char **argv) {
   rc = seccomp_export_bpf(ctx, STDOUT_FILENO);
   if (rc) error(1, -rc, "Unable to load seccomp rules");
 
-  return 1;
+  return 0;
 }
