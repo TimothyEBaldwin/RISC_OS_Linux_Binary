@@ -1,4 +1,4 @@
 # Source and build GIT commits
-SOURCE=366a1c1e5b6517e8857a96b28be45a00ccc41684
-LINUX='Linux bfg 4.17.0-0.bpo.1-amd64 #1 SMP Debian 4.17.8-1~bpo9+1 (2018-07-23) x86_64 GNU/Linux'
+SOURCE=a29492c1852fcb418a30b8084044268eccb773e0
+LINUX='Linux bfg 4.17.0-0.bpo.3-amd64 #1 SMP Debian 4.17.17-1~bpo9+1 (2018-08-27) x86_64 GNU/Linux'
 
