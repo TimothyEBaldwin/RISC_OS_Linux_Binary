@@ -1,30 +1,18 @@
 #!/usr/bin/make -f
 #
 # Copyright (c) 2013-2018, Timothy Baldwin
-# All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in the
-#       documentation and/or other materials provided with the distribution.
-#     * Neither the name of RISC OS Open Ltd nor the names of its contributors
-#       may be used to endorse or promote products derived from this software
-#       without specific prior written permission.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 HARDDISC4=$(HOME)/Downloads/HardDisc4.5.24.zip
@@ -69,7 +57,7 @@ endif
 robind = $(foreach dir,$(wildcard $(1)),--ro-bind $(dir) $(dir))
 sandbox_misc := $(sandbox_root) $(call robind,/usr/bin /usr/lib* /etc/alternatives)
 sandbox_build := $(sandbox_root) $(call robind,/usr /etc/alternatives) --dev /dev --tmpfs /usr/local
-sandbox_base = $(BWRAP) --unsetenv TMPDIR --unshare-all --seccomp 9 9< <(Built/gen_seccomp $(1)) --proc /proc --dir /tmp --dir /dev/shm
+sandbox_base = $(BWRAP) --unsetenv TMPDIR --unshare-all $(if $(use_seccomp), --seccomp 9 9< <(Built/gen_seccomp $(1)), --new-session) --proc /proc --dir /tmp --dir /dev/shm
 ldd2sandbox = env -i $(sandbox_base) $(sandbox_misc) --ro-bind $(1) /exe ldd /exe < /dev/null | sed -nr 's:^(.*[ \t])?((/usr)?/lib[-A-Za-z_0-9]*(/[-A-Za-z_0-9][-A-Za-z._0-9\+]*)+)([ \t].*)?$$:--ro-bind \2 \2:p'  | sort -u | tr '\n' ' '
 lib_depends := $(wildcard /etc/alternatives /etc/ld.so.* Support/*.mk)
 frontend_depends := Support/Keyboard.h Support/frontend_common.h Support/SocketKVM_Protocol.h $(lib_depends)
@@ -186,6 +174,7 @@ Built/qemu-arm: Built/qemu_Makefile_stamp
 Built/sandbox_config_sh: $(QEMU) Built/gen_seccomp
 	set -o pipefail
 	exec > Built/sandbox_config_sh
+	echo use_seccomp=$(use_seccomp)
 ifeq ($(QEMU),/usr/bin/env)
 	echo QEMU=
 
@@ -207,6 +196,10 @@ Built/sandbox_config_make: Built/gen_seccomp $(LINUX_ROM) /bin
 	set -o pipefail
 	$(BWRAP) --ro-bind / /  true
 	#
+	if $(BWRAP) --seccomp 9 9< <(Built/gen_seccomp) --ro-bind / /  true; then
+	  use_seccomp=true
+	fi
+	#
 	for i in /bin /sbin /lib*; do
 	  if [[ -L $$i ]]; then
 	    sandbox_root+=(--symlink "$$(readlink "$$i")" "$$i")
@@ -221,7 +214,8 @@ Built/sandbox_config_make: Built/gen_seccomp $(LINUX_ROM) /bin
 	elif ! $(sandbox_base) --ro-bind Support/Finish /Finish --ro-bind '$(LINUX_ROM)' /RISC_OS $$($(call ldd2sandbox,"$$QEMU1")) --ro-bind "$$QEMU1" /qemu-arm /qemu-arm /RISC_OS; then
 	  QEMU1=Built/qemu-arm
 	fi
-	echo "sandbox_root:=$${sandbox_root[@]@Q}
+	echo "use_seccomp:=$$use_seccomp
+	sandbox_root:=$${sandbox_root[@]@Q}
 	QEMU:=$$QEMU1" > $@
 
 HardDisc4: | $(HARDDISC4)
