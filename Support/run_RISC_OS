@@ -31,6 +31,14 @@ choose_term() {
   return 1
 }
 
+readonly() {
+  RISC_OS__BWRAP_EXTRA="$RISC_OS__BWRAP_EXTRA --ro-bind ${1@Q} ${1@Q}"
+}
+
+readwrite() {
+  RISC_OS__BWRAP_EXTRA="$RISC_OS__BWRAP_EXTRA --bind ${1@Q} ${1@Q}"
+}
+
 if [[ -r config ]]; then
   . config
 fi
@@ -45,6 +53,11 @@ if [[ "$RISC_OS__INSECURE" == "YES" ]]; then
   make_opts+=( INSECURE=YES )
 else
   make_opts+=( Built/seccomp- )
+fi
+
+eval "gui=( ${RISC_OS__GUI:=Built/sdl} )"
+if [[ $gui == Built/sdl || $gui == Built/opengl ]]; then
+  make_opts+=( -f Unix/SocketKVMFrontends/build.mk "$gui" )
 fi
 
 if ! make --question "${make_opts[@]}"; then
@@ -69,7 +82,6 @@ nvram=('HardDisc4/!Boot/CMOS',??? 'HardDisc4/!Boot/CMOS')
 
 : ${RISC_OS_Alias_IXFSBoot:='/<IXFS$HardDisc4>.!Boot'}
 export RISC_OS_Alias_IXFSBoot
-eval "gui=( ${RISC_OS__GUI:=Built/sdl} )"
 eval "bwrap_extra=($RISC_OS__BWRAP_EXTRA)"
 
 if [[ "$RISC_OS__INSECURE" == "YES" ]]; then
