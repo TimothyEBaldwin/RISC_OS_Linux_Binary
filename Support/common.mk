@@ -16,7 +16,7 @@
 #
 
 HARDDISC4=$(HOME)/Downloads/HardDisc4.5.24.util
-QEMU_SRC=$(HOME)/Downloads/qemu-3.0.0.tar.xz
+QEMU_SRC=$(HOME)/Downloads/qemu-4.0.0.tar.xz
 RPCEMU=$(HOME)/Downloads/rpcemu-0.8.15.tar.gz
 IOMD=$(HOME)/Downloads/IOMD-Soft.5.24.zip
 
@@ -44,7 +44,7 @@ SHELL=$(warning Building $@)$(BASH)
 .DELETE_ON_ERROR:
 .PHONY: all script-all
 
-all: sdl Start_RISC_OS.desktop comma2attr
+all: comma2attr
 
 ifeq ($(INSECURE), YES)
 QEMU:=/usr/bin/env
@@ -55,8 +55,8 @@ script-all: Built/sandbox_config_sh
 endif
 
 robind = $(foreach dir,$(wildcard $(1)),--ro-bind $(dir) $(dir))
-sandbox_misc := $(sandbox_root) $(call robind,/usr/bin /usr/lib* /etc/alternatives)
-sandbox_build := $(sandbox_root) $(call robind,/usr /etc/alternatives) --dev /dev --tmpfs /usr/local
+sandbox_misc := $(call robind,/bin /lib* /usr/bin /usr/lib* /etc/alternatives)
+sandbox_build := $(call robind,/bin /lib* /usr /etc/alternatives) --dev /dev --tmpfs /usr/local
 sandbox_base = $(BWRAP) --unsetenv TMPDIR --unshare-all $(if $(use_seccomp), --seccomp 9 9< <(Built/gen_seccomp $(1)), --new-session) --proc /proc --dir /tmp --dir /dev/shm
 ldd2sandbox = env -i $(sandbox_base) $(sandbox_misc) --ro-bind $(1) /exe ldd /exe < /dev/null | sed -nr 's:^(.*[ \t])?((/usr)?/lib[-A-Za-z_0-9]*(/[-A-Za-z_0-9][-A-Za-z._0-9\+]*)+)([ \t].*)?$$:--ro-bind \2 \2:p'  | sort -u | tr '\n' ' '
 lib_depends := $(wildcard /etc/alternatives /etc/ld.so.* Support/*.mk)
@@ -69,9 +69,6 @@ RISC_OS:
 
 comma2attr: Built/comma2attr
 	ln -sf Built/comma2attr comma2attr
-
-Start_RISC_OS.desktop:
-	ln -s Support/Start_RISC_OS.desktop
 
 Built/comma2attr: Support/comma2attr.c $(lib_depends) | Built
 	gcc -std=gnu99 -Wall -g Support/comma2attr.c -o Built/comma2attr
@@ -125,22 +122,22 @@ Built/rpcemu/rpcemu: Built/rpcemu/src/Makefile
 	export -f build
 	$(sandbox_base) $(sandbox_build) --bind Built/rpcemu /r --chdir /r bash -x -e -c build
 
-Built/qemu_stamp-v3.0.0: ${QEMU_SRC} | Built/gen_seccomp
+Built/qemu_stamp-v4.0.0: ${QEMU_SRC} | Built/gen_seccomp
 	rm -rf Built/qemu*
 	mkdir -p Built/qemu_files
 	cp --reflink=auto '${QEMU_SRC}' Built/qemu_files/qemu.tar.xz
 	unpack() {
-	  echo "8d7af64fe8bd5ea5c3bdf17131a8b858491bcce1ee3839425a6d91fb821b5713 qemu.tar.xz" | sha256sum -c
+	  echo "13a93dfe75b86734326f8d5b475fde82ec692d5b5a338b4262aeeb6b0fa4e469 qemu.tar.xz" | sha256sum -c
 	  tar -Jxf qemu.tar.xz
-	  cd qemu-3.0.0
+	  cd qemu-4.0.0
 	  patch -p1
 	}
 	export -f unpack
 	cat Support/qemu_swi.diff | $(call sandbox_base,-s) $(sandbox_misc) --bind Built/qemu_files /q --chdir /q bash -x -e -c unpack
-	mv Built/qemu_files/qemu-3.0.0 Built/qemu
-	touch Built/qemu_stamp-v3.0.0
+	mv Built/qemu_files/qemu-4.0.0 Built/qemu
+	touch Built/qemu_stamp-v4.0.0
 
-Built/qemu_Makefile_stamp: Built/qemu_stamp-v3.0.0
+Built/qemu_Makefile_stamp: Built/qemu_stamp-v4.0.0
 	$(call sandbox_base,-s) $(sandbox_build) --bind Built/qemu /q --chdir /q ./configure --enable-attr --target-list=arm-linux-user --disable-werror
 	touch Built/qemu_Makefile_stamp
 
@@ -180,14 +177,6 @@ Built/sandbox_config_make: Built/gen_seccomp $(LINUX_ROM) /bin
 	  use_seccomp=true
 	fi
 	#
-	for i in /bin /sbin /lib*; do
-	  if [[ -L $$i ]]; then
-	    sandbox_root+=(--symlink "$$(readlink "$$i")" "$$i")
-	  else
-	    sandbox_root+=(--ro-bind "$$i" "$$i")
-	  fi
-	done
-	#
 	export RISC_OS_Alias_IXFSBoot='BASIC -quit IXFS:$$.Finish'
 	if $(sandbox_base) --ro-bind '$(LINUX_ROM)' /RISC_OS /RISC_OS --help; then
 	  $(sandbox_base) --ro-bind Support/Finish /Finish --ro-bind '$(LINUX_ROM)' /RISC_OS /RISC_OS;
@@ -196,7 +185,6 @@ Built/sandbox_config_make: Built/gen_seccomp $(LINUX_ROM) /bin
 	  QEMU1=Built/qemu-arm
 	fi
 	echo "use_seccomp:=$$use_seccomp
-	sandbox_root:=$${sandbox_root[@]@Q}
 	QEMU:=$$QEMU1" > $@
 
 HardDisc4: | $(HARDDISC4) Built/sandbox_config_sh $(LINUX_ROM)
@@ -234,7 +222,7 @@ $(IOMD):
 	setfattr -n user.RISC_OS.LoadExec -v 0x0091faff00000000 $@ || true
 
 ${QEMU_SRC}:
-	sh Support/download.sh '${QEMU_SRC}' "https://download.qemu.org/qemu-3.0.0.tar.xz" "8d7af64fe8bd5ea5c3bdf17131a8b858491bcce1ee3839425a6d91fb821b5713"
+	sh Support/download.sh '${QEMU_SRC}' "https://download.qemu.org/qemu-4.0.0.tar.xz" "13a93dfe75b86734326f8d5b475fde82ec692d5b5a338b4262aeeb6b0fa4e469"
 	setfattr -n user.RISC_OS.LoadExec -v 0x00fdffff00000000 $@ || true
 
 $(RPCEMU):
