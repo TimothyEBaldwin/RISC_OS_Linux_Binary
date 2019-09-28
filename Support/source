@@ -1,4 +1,0 @@
-# Source and build GIT commits
-SOURCE=89181655cb0337c570a8f2d3bd45e24f0794baa6
-LINUX='Linux bfg 4.19.0-5-amd64 #1 SMP Debian 4.19.37-5+deb10u2 (2019-08-08) x86_64 GNU/Linux'
-
