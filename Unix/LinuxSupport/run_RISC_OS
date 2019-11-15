@@ -39,7 +39,7 @@ readwrite() {
 }
 
 init_make_opts() {
-  make_opts=( -f Support/common.mk script-all )
+  make_opts=( -f Unix/LinuxSupport/common.mk script-all )
   if [[ "$RISC_OS__INSECURE" == "YES" ]]; then
     make_opts+=( INSECURE=YES )
   else
@@ -50,7 +50,7 @@ init_make_opts() {
 gui_make_opts() {
   eval "gui=( ${RISC_OS__GUI:=Built/sdl} )"
   if [[ $gui == Built/sdl || $gui == Built/opengl ]]; then
-    make_opts+=( -f Unix/SocketKVMFrontends/build.mk "$gui" )
+    make_opts+=( "$gui" )
   fi
 }
 
@@ -63,7 +63,7 @@ run_make() {
     {
       mkdir -p Built
       test "$(
-        $term flock Built bash -x -c '
+        $term flock --close Built bash -x -c '
           set -eo pipefail
           make -j$(getconf _NPROCESSORS_ONLN) "${@:0}" 2>&1 5>&- | tee Built/build_log
           echo Finished >&5' \
