@@ -16,12 +16,9 @@ exec </dev/null 3>/dev/null > >(cat) 2>&1
 . Built/sandbox_config_sh
 
 run() {
-  if [[ $use_seccomp = "true" ]]; then
-    seccomp="--seccomp 9"
-  fi
   timeout --foreground -sKILL 60 \
-  ${BWRAP:=bwrap} --unshare-all --proc /proc --dev /dev --dir /tmp --new-session $seccomp 9< <(Built/gen_seccomp $1) \
-  --ro-bind "$risc_os" /RISC_OS --ro-bind mixed/Linux/Tests /Tests "${auto_bwrap_args[@]}" $QEMU \
+  "${BWRAP}" --unshare-all --proc /proc --dev /dev --dir /tmp --seccomp 9 9< <(Built/gen_seccomp $1) \
+  --ro-bind "$risc_os" /RISC_OS --ro-bind mixed/Linux/Tests /Tests "${auto_bwrap_args[@]}" "${qemu_libs[@]}" $QEMU \
   /RISC_OS "${@:2}"
 }
 
@@ -31,6 +28,9 @@ if [[ $QEMU = "" ]]; then
   # Test ptrace SWI implemnation
   RISC_OS_Alias_IXFSBoot='BASIC -quit <Test$Dir>.Finish' run -p --abort-on-input --noaborts
 fi
+
+# Test C swi handler
+RISC_OS_Alias_IXFSBoot='BASIC -quit <Test$Dir>.Finish' run '' --cswi --abort-on-input --noaborts
 
 # Various tests that shouldn't cause data aborts
 RISC_OS_Alias_IXFSBoot='Obey -v <Test$Dir>.PreDesk_NoAbort' run '' --abort-on-input --noaborts
